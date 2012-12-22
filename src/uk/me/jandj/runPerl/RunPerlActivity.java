@@ -41,6 +41,7 @@ public class RunPerlActivity extends JavaBridgeActivity
 		}
 
         String abs_path = this.getFilesDir().getAbsolutePath();
+        //String abs_path = runtime_path+"installed/";
         String executable_path = abs_path + "/perl/perl";
         Log.w(log_tag, "starting, doing boilerplate");
         super.onCreate(savedInstanceState);
@@ -60,6 +61,7 @@ public class RunPerlActivity extends JavaBridgeActivity
             Log.e(log_tag, "Perl binary seems to not exist");
         }
 
+        Log.d(log_tag, "Starting executable in "+executable_path);
         ProcessBuilder proc_build = new ProcessBuilder(executable_path, script_path);
         proc_build.directory(new File(runtime_path));
         proc_build.environment().put("PERL5LIB", abs_path+"/perl/5.17.4:"+libs_path);
@@ -100,8 +102,9 @@ public class RunPerlActivity extends JavaBridgeActivity
     }
 
     private void doFirstTimeSetup() throws FileNotFoundException, IOException {
+        //String abs_path = runtime_path+"installed/";
         String abs_path = this.getFilesDir().getAbsolutePath();
-        String executable_path = abs_path + "/perl";
+        String executable_path = abs_path + "/perl/perl";
         File executable = new File(executable_path);
         File runtime = new File(script_path);
         File test_lib = new File(libs_path+"Android.pm");
@@ -111,32 +114,22 @@ public class RunPerlActivity extends JavaBridgeActivity
         Toast toast = Toast.makeText( getApplicationContext(), "Extracting Perl all over the disk ... ", Toast.LENGTH_LONG);
 
         if (!executable.exists()) {
-            /*
-            BufferedInputStream exec_in_str =
-                new BufferedInputStream(res.openRawResource(R.raw.perl));
-            */
-
-            //putFile(exec_in_str, executable);
 
             // FIXME: Make version a variable.
             InputStream perl_zip = res.openRawResource(R.raw.perl_5_17_4);
             unzip(perl_zip, abs_path);
-
+            // +x, for everyone
+            executable.setExecutable(true, false);
         }
         // Unzip accompanying test dir.
         File extstorage = new File(Environment.getExternalStorageDirectory(), "/Perl");
-        File testdir = new File(extstorage, "/t");
-        if(!testdir.exists()) {
-            unzip(res.openRawResource(R.raw.perl_test), extstorage.toString());
-        }
 
         if(!runtime.exists()) {
             putFile(res.openRawResource(R.raw.runperl), runtime);
         }
 
-        if(!test_lib.exists()) {
-            unzip(res.openRawResource(R.raw.perl_libs), libs_path);
-        }
+        // Always unpack the libs
+        unzip(res.openRawResource(R.raw.perl_libs), libs_path);
     }
 
 
