@@ -16,6 +16,7 @@ import uk.me.desert_island.theorbtwo.bridge.*;
 public class RunPerlActivity extends JavaBridgeActivity
 {
 
+    // public static String perl_version = "5.17.9";
     // END IN A SLASH!
     public static String runtime_path = "/mnt/sdcard/uk.me.jandj.runPerl/";
     public static String libs_path = runtime_path + "extras/lib/";
@@ -42,7 +43,7 @@ public class RunPerlActivity extends JavaBridgeActivity
 
         String abs_path = this.getFilesDir().getAbsolutePath();
         //String abs_path = runtime_path+"installed/";
-        String executable_path = abs_path + "/perl/perl";
+        String executable_path = abs_path + "/perl/bin/perl";
         Log.w(log_tag, "starting, doing boilerplate");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
@@ -64,7 +65,9 @@ public class RunPerlActivity extends JavaBridgeActivity
         Log.d(log_tag, "Starting executable in "+executable_path);
         ProcessBuilder proc_build = new ProcessBuilder(executable_path, script_path);
         proc_build.directory(new File(runtime_path));
-        proc_build.environment().put("PERL5LIB", abs_path+"/perl/5.17.4:"+libs_path);
+        // relocatable inc should DWIM..
+        proc_build.environment().put("PERL5LIB", libs_path);
+        //        proc_build.environment().put("PERL5LIB", abs_path+"/perl/"+perl_version+":"+libs_path);
 
         Toast toast = Toast.makeText( getApplicationContext(), "Attempting to run run_perl.pl ... ", Toast.LENGTH_LONG);
 
@@ -103,8 +106,9 @@ public class RunPerlActivity extends JavaBridgeActivity
 
     private void doFirstTimeSetup() throws FileNotFoundException, IOException {
         //String abs_path = runtime_path+"installed/";
+        // its /data/data/uk.me.jandj.runPerl/files 
         String abs_path = this.getFilesDir().getAbsolutePath();
-        String executable_path = abs_path + "/perl/perl";
+        String executable_path = abs_path + "/perl/bin/perl";
         File executable = new File(executable_path);
         File runtime = new File(script_path);
         File test_lib = new File(libs_path+"Android.pm");
@@ -115,8 +119,8 @@ public class RunPerlActivity extends JavaBridgeActivity
 
         if (!executable.exists()) {
 
-            // FIXME: Make version a variable.
-            InputStream perl_zip = res.openRawResource(R.raw.perl_5_17_4);
+            // perl.zip is the current version
+            InputStream perl_zip = res.openRawResource(R.raw.perl);
             unzip(perl_zip, abs_path);
             // +x, for everyone
             executable.setExecutable(true, false);
@@ -155,6 +159,21 @@ public class RunPerlActivity extends JavaBridgeActivity
         
     }
 
+    private static boolean deleteFile(File toDelete) {
+        if(toDelete.isDirectory()) {
+            File[] contents = toDelete.listFiles();
+            for ( File f : contents ) {
+                deleteFile(f);
+            }
+        }
+
+        if(!toDelete.delete()) {
+            Log.e(log_tag, "Failed to delete " + toDelete + " in deleteFile");
+                  return false;
+        }
+        return true;
+    }
+    
     private static void putFile(InputStream input, File target)  throws FileNotFoundException, IOException {
         final int BUFFER_SIZE = 4096;
 
@@ -177,7 +196,7 @@ public class RunPerlActivity extends JavaBridgeActivity
         //        Log.w(log_tag, "putFile("+target+")");
 
         if(target.exists()) {
-            if(!target.delete()) {
+            if(!deleteFile(target)) {
                 Log.w(log_tag, "putFile tried to delete " +target + ", but failed");
             }
         }
